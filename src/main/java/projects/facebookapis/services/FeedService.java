@@ -1,10 +1,7 @@
 package projects.facebookapis.services;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 import projects.facebookapis.models.Feed;
 import projects.facebookapis.models.Follow;
@@ -66,7 +63,23 @@ public class FeedService {
     }
 
     public Feed getFeedPaginated(String username, int page, int size) {
-        Optional<Feed> feedOptional = getFeed(username);
+        //Optional<Feed> feedOptional = getFeed(username);
+        Optional<User> userOptional = userRepository.findByUsername(username);
+        List<User> followedUsers = new ArrayList<>();
+        if (userOptional.isPresent()) {
+            User user = userOptional.get();
+            Optional<List<Follow>> followsOptional = followRepository.findByFollower(user);
+            if (followsOptional.isPresent()) {
+                List<Follow> follows = followsOptional.get();
+                for(Follow follow : follows) {
+                    User followedUser = follow.getFollowed();
+                    followedUsers.add(followedUser);
+                }
+            }
+        }
+        Pageable pageRequest = PageRequest.of(page, size, Sort.by("createdDate").descending());
+        Page<Post> postPage= postRepository.findAllByCreatedByIsIn(followedUsers, pageRequest);
+        /*
         if (feedOptional.isPresent()) {
             Feed feed = feedOptional.get();
             Feed f = new Feed();
@@ -77,7 +90,11 @@ public class FeedService {
             }
             f.setPosts(posts);
             return f;
-        }
-        return null;
+        }*/
+        List<Post> paginatedPostList = postPage.getContent();
+        Feed feedPaginated = new Feed();
+        feedPaginated.setUser(userOptional.get());
+        feedPaginated.setPosts(paginatedPostList);
+        return feedPaginated;
     }
 }

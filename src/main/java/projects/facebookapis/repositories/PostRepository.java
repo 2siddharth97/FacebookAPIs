@@ -13,4 +13,6 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     Optional<List<Post>> findAllByCreatedBy(User user);
 
     Page<Post> findAllByCreatedBy(User user, Pageable pageable);
+
+    Page<Post> findAllByCreatedByIsIn(List<User> users, Pageable pageable);
 }
